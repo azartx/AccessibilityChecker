@@ -37,7 +37,6 @@ android {
 
 dependencies {
     implementation(project(":service"))
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.core)
+    implementation(libs.appcompat)
 }

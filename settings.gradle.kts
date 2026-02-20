@@ -21,5 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "AccessibilityChecker"
 include(":app")
-include(":aidl")
 include(":service")

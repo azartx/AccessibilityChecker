@@ -1,9 +1,35 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    id("maven-publish")
+}
+
+val libVersion = "0.1"
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.solo4.accessibilitychecker"
+            artifactId = "service"
+            version = libVersion
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
 }
 
 android {
+    group = "com.solo4.accessibilitychecker"
+    version = libVersion
+
+    publishing {
+        singleVariant("release")
+    }
+
     namespace = "com.solo4.accessibilitychecker.service"
     compileSdk {
         version = release(36)
@@ -32,13 +58,10 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
-}
 
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    dependencies {
+        implementation(libs.androidx.appcompat)
+        implementation(libs.androidx.core.ktx)
+        implementation(libs.androidx.core)
+    }
 }
