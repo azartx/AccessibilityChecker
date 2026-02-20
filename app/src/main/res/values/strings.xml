@@ -1,4 +1,3 @@
 <resources>
     <string name="app_name">AccessibilityChecker</string>
-    <string name="accessibility_checker_description">Accessibility test tool</string>
 </resources>
