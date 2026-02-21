@@ -26,6 +26,8 @@ class AccessibilityCheckerService : AccessibilityService() {
         lateinit var instance: AccessibilityCheckerService; private set
     }
 
+    private var receiver: AccessibilityFocusReceiver? = null
+
     override fun onServiceConnected() {
         instance = this
         AccessibilityServiceInfo().apply {
@@ -38,7 +40,8 @@ class AccessibilityCheckerService : AccessibilityService() {
         val filter = IntentFilter().apply {
             AccessibilityFocusReceiver.receiverActions.forEach { addAction(it) }
         }
-        registerReceiver(AccessibilityFocusReceiver(), filter, RECEIVER_EXPORTED)
+        receiver = AccessibilityFocusReceiver()
+        registerReceiver(receiver, filter, RECEIVER_EXPORTED)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -101,5 +104,8 @@ class AccessibilityCheckerService : AccessibilityService() {
             ?: "ClassName is null" // todo replace to an empty string
     }
 
-    override fun onInterrupt() = Unit
+    override fun onInterrupt() {
+        receiver?.let { unregisterReceiver(it) }
+        receiver = null
+    }
 }
