@@ -3,11 +3,13 @@ package com.solo4.accessibilitychecker.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
+import android.content.IntentFilter
 import android.os.Environment
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
+import com.solo4.accessibilitychecker.service.broadcastreceiver.AccessibilityFocusReceiver
 import com.solo4.accessibilitychecker.service.model.ComponentInfo
 import java.io.File
 import java.io.FileOutputStream
@@ -15,10 +17,17 @@ import java.io.IOException
 
 private const val SERVICE_TAG = "AService"
 
+// TODO: Стянуть токбэк из гитхаб репозитория, в классе AccessibilityNodeFeedbackUtils есть получение озвучки для роли компонента
 @SuppressLint("AccessibilityPolicy")
 class AccessibilityCheckerService : AccessibilityService() {
 
+    companion object {
+        @Volatile
+        lateinit var instance: AccessibilityCheckerService; private set
+    }
+
     override fun onServiceConnected() {
+        instance = this
         AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPES_ALL_MASK
             feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN
@@ -26,6 +35,10 @@ class AccessibilityCheckerService : AccessibilityService() {
             packageNames = emptyArray()
             this@AccessibilityCheckerService.serviceInfo = this
         }
+        val filter = IntentFilter().apply {
+            AccessibilityFocusReceiver.receiverActions.forEach { addAction(it) }
+        }
+        registerReceiver(AccessibilityFocusReceiver(), filter, RECEIVER_EXPORTED)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
