@@ -15,6 +15,7 @@ private const val RECEIVER_TAG = "AccBroadcast"
 private const val ACTION_SWIPE_RIGHT = "com.solo4.ACTION_SWIPE_RIGHT"
 private const val ACTION_SWIPE_LEFT = "com.solo4.ACTION_SWIPE_LEFT"
 private const val ACTION_FOCUS_FIRST = "com.solo4.ACTION_FOCUS_FIRST"
+private const val ACTION_IS_FOCUSED_ITEM_LAST = "com.solo4.ACTION_IS_FOCUSED_ITEM_LAST"
 
 // TODO: should write all errors to the log file and after error check logs
 // TODO: add checks is current item is last screen item
@@ -26,12 +27,13 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
             ACTION_SWIPE_RIGHT,
             ACTION_SWIPE_LEFT,
             ACTION_FOCUS_FIRST,
+            ACTION_IS_FOCUSED_ITEM_LAST,
         )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val service = AccessibilityCheckerService.instance
-        when(intent.action) {
+        when (intent.action) {
             ACTION_SWIPE_RIGHT -> {
                 Log.e(RECEIVER_TAG, "Perform swipe right")
 
@@ -56,6 +58,11 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
                 Log.e(RECEIVER_TAG, "Request focus of the first clickable element")
 
                 requestFirstElementFocus(service)
+            }
+            ACTION_IS_FOCUSED_ITEM_LAST -> {
+                Log.e(RECEIVER_TAG, "Checking is current focused item last on current window")
+
+                requestIsFocusedItemLats(service)
             }
         }
     }
@@ -90,7 +97,7 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
         service.dispatchGesture(gesture, null, null)
     }
 
-    fun requestFirstElementFocus(service: AccessibilityCheckerService) {
+    private fun requestFirstElementFocus(service: AccessibilityCheckerService) {
         Handler(service.mainLooper).post {
             try {
                 val rootNode = service.rootInActiveWindow
@@ -122,7 +129,8 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
     private fun findFirstFocusableNode(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         if (node.isVisibleToUser && node.isImportantForAccessibility && !node.isAccessibilityFocused) {
             if (node.isFocusable || node.isClickable ||
-                node.actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)) {
+                node.actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)
+            ) {
                 return node
             }
         }
@@ -138,5 +146,47 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
         }
 
         return null
+    }
+
+    private fun requestIsFocusedItemLats(service: AccessibilityCheckerService) {
+        val rootNode = service.rootInActiveWindow
+
+        val focusedItem: AccessibilityNodeInfo? =
+            rootNode.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)
+
+        val lastItem = findLastFocusableNode(rootNode)
+
+        val isLastItem = if (focusedItem == null) {
+            // focused item is not the part of current info (like system UI, talkback bnt)
+            true
+        } else if (lastItem == null) {
+            true
+        } else {
+            focusedItem == lastItem
+        }
+
+        Log.i(RECEIVER_TAG, "Is current focused item last: $isLastItem")
+    }
+
+    private fun findLastFocusableNode(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        for (i in rootNode.childCount - 1 downTo 0) {
+            val child = rootNode.getChild(i) ?: continue
+            val result = findLastFocusableNode(child)
+            return if (result.isAccessible()) {
+                result
+            } else if (child.isAccessible()) {
+                child
+            } else {
+                null
+            }
+        }
+        return null
+    }
+
+    private fun AccessibilityNodeInfo?.isAccessible(): Boolean {
+        return this != null &&
+                this.isImportantForAccessibility &&
+                this.isVisibleToUser &&
+                (this.isClickable || this.isFocusable)
     }
 }
