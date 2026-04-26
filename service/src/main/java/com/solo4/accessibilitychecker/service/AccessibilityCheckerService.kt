@@ -9,9 +9,12 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.solo4.accessibilitychecker.service.broadcastreceiver.AccessibilityFocusReceiver
+import com.solo4.accessibilitychecker.service.broadcastreceiver.AttyCheckerBridge
+import com.solo4.accessibilitychecker.service.model.Settings
+import com.solo4.accessibilitychecker.service.utils.LogeEror
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -31,7 +34,12 @@ private const val COMPONENTS_INFO_FILE_NAME = "service_response.txt"
 private const val DUMP_FILE_NAME = "current_screen_dump.json"
 private const val STORAGE_A11Y_INFO_FILE_PATH = "/storage/emulated/0/Android/data/com.solo4.accessibilitychecker/files/Download/$DUMP_FILE_NAME"
 
-// TODO: Стянуть токбэк из гитхаб репозитория, в классе AccessibilityNodeFeedbackUtils есть получение озвучки для роли компонента
+// adb shell settings put secure enabled_accessibility_services "$(adb shell settings get secure enabled_accessibility_services):com.solo4.accessibilitychecker/com.solo4.accessibilitychecker.service.AccessibilityCheckerService"
+
+// TODO: add ability to update settings sync
+@Transient
+var serviceSettings = Settings()
+
 @SuppressLint("AccessibilityPolicy")
 class AccessibilityCheckerService : AccessibilityService() {
 
@@ -43,14 +51,41 @@ class AccessibilityCheckerService : AccessibilityService() {
     private var receiver: AccessibilityFocusReceiver? = null
 
     private val scope = CoroutineScope(Dispatchers.IO)
+    private var eventsJob: Job? = null
     private val mutex = Mutex()
 
-    private val eventsProcessorFlow = MutableSharedFlow<String>() // AccessibilityEvent.eventTypeToString(event.eventType)
+    private val eventsProcessorFlow = MutableSharedFlow<AccessibilityEvent>()
 
-    init {
-        scope.launch {
+    override fun onServiceConnected() {
+        instance = this
+        val filter = IntentFilter().apply {
+            AttyCheckerBridge.receiverActions.forEach { addAction(it) }
+        }
+        receiver = AccessibilityFocusReceiver()
+        registerReceiver(receiver, filter, RECEIVER_EXPORTED)
+        collectEvents()
+    }
+
+    override fun onInterrupt() {
+        eventsJob?.cancel()
+        receiver?.let { unregisterReceiver(it) }
+        receiver = null
+    }
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        scope.launch(Dispatchers.Main) {
+            eventsProcessorFlow.emit(event)
+        }
+    }
+
+    private fun collectEvents() {
+        if (eventsJob?.isActive == true) {
+            LogeEror("Events job is active.")
+            return
+        }
+        eventsJob = scope.launch {
             eventsProcessorFlow
-                .filter { it == "TYPE_WINDOW_CONTENT_CHANGED" }
+                .filter { serviceSettings.filters.canProceedEvent(it) }
                 .debounce(200)
                 .map {
                     dumpActiveWindow()
@@ -68,21 +103,6 @@ class AccessibilityCheckerService : AccessibilityService() {
                         }
                     }
                 }
-        }
-    }
-
-    override fun onServiceConnected() {
-        instance = this
-        val filter = IntentFilter().apply {
-            AccessibilityFocusReceiver.receiverActions.forEach { addAction(it) }
-        }
-        receiver = AccessibilityFocusReceiver()
-        registerReceiver(receiver, filter, RECEIVER_EXPORTED)
-    }
-
-    override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        scope.launch(Dispatchers.Main) {
-            eventsProcessorFlow.emit(AccessibilityEvent.eventTypeToString(event.eventType))
         }
     }
 
@@ -165,11 +185,5 @@ class AccessibilityCheckerService : AccessibilityService() {
                 file.delete()
             }
         }
-    }
-
-    override fun onInterrupt() {
-        scope.cancel()
-        receiver?.let { unregisterReceiver(it) }
-        receiver = null
     }
 }
