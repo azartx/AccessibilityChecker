@@ -8,7 +8,12 @@ import android.graphics.Path
 import android.os.Handler
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.os.bundleOf
 import com.solo4.accessibilitychecker.service.AccessibilityCheckerService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val RECEIVER_TAG = "AccBroadcast"
 
@@ -16,6 +21,7 @@ private const val ACTION_SWIPE_RIGHT = "com.solo4.ACTION_SWIPE_RIGHT"
 private const val ACTION_SWIPE_LEFT = "com.solo4.ACTION_SWIPE_LEFT"
 private const val ACTION_FOCUS_FIRST = "com.solo4.ACTION_FOCUS_FIRST"
 private const val ACTION_IS_FOCUSED_ITEM_LAST = "com.solo4.ACTION_IS_FOCUSED_ITEM_LAST"
+private const val ACTION_GET_SCREEN_A11Y = "com.solo4.ACTION_GET_SCREEN_A11Y"
 
 // TODO: should write all errors to the log file and after error check logs
 // TODO: add checks is current item is last screen item
@@ -28,46 +34,62 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
             ACTION_SWIPE_LEFT,
             ACTION_FOCUS_FIRST,
             ACTION_IS_FOCUSED_ITEM_LAST,
+            ACTION_GET_SCREEN_A11Y,
         )
     }
 
+    private val scope by lazy { CoroutineScope(Dispatchers.Main) }
+
     override fun onReceive(context: Context, intent: Intent) {
         val service = AccessibilityCheckerService.instance
-        when (intent.action) {
+        val resultData = when (intent.action) {
             ACTION_SWIPE_RIGHT -> {
                 Log.e(RECEIVER_TAG, "Perform swipe right")
 
-                performSwipeRight(
+                performSwipe(
                     context,
                     service,
                     0.2,
                     0.8
                 )
             }
+
             ACTION_SWIPE_LEFT -> {
                 Log.e(RECEIVER_TAG, "Perform swipe left")
 
-                performSwipeRight(
+                performSwipe(
                     context,
                     service,
                     0.8,
                     0.2
                 )
             }
+
             ACTION_FOCUS_FIRST -> {
                 Log.e(RECEIVER_TAG, "Request focus of the first clickable element")
 
                 requestFirstElementFocus(service)
             }
+
             ACTION_IS_FOCUSED_ITEM_LAST -> {
                 Log.e(RECEIVER_TAG, "Checking is current focused item last on current window")
 
                 requestIsFocusedItemLats(service)
             }
+
+            ACTION_GET_SCREEN_A11Y -> {
+                Log.e(RECEIVER_TAG, "Processing screen accessibility")
+
+                getScreenA11Y(service)
+            }
+
+            else -> Unit
         }
+
+        setResult(0, resultData.toString(), bundleOf())
     }
 
-    private fun performSwipeRight(
+    private fun performSwipe(
         context: Context,
         service: AccessibilityCheckerService,
         startPointXPercent: Double, // point from screen width
@@ -148,7 +170,7 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
         return null
     }
 
-    private fun requestIsFocusedItemLats(service: AccessibilityCheckerService) {
+    private fun requestIsFocusedItemLats(service: AccessibilityCheckerService): Boolean {
         val rootNode = service.rootInActiveWindow
 
         val focusedItem: AccessibilityNodeInfo? =
@@ -166,6 +188,7 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
         }
 
         Log.i(RECEIVER_TAG, "Is current focused item last: $isLastItem")
+        return isLastItem
     }
 
     private fun findLastFocusableNode(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
@@ -181,6 +204,40 @@ class AccessibilityFocusReceiver : BroadcastReceiver() {
             }
         }
         return null
+    }
+
+    // todo почему на деталке операций скролл вью считается последним элементом?
+    // отправлять результат бродкастом
+    private fun getScreenA11Y(service: AccessibilityCheckerService) {
+        service.removeMakerFile()
+        service.clearA11yLogFile()
+
+        scope.launch {
+            var itemsFocusedCount = 0
+            requestFirstElementFocus(service)
+            do {
+                delay(3000)
+                performSwipe(service, service, 0.2, 0.8)
+                ++itemsFocusedCount
+                if (itemsFocusedCount > 100) {
+                    Log.w(
+                        RECEIVER_TAG,
+                        "Too many items on screen& Is screen contains large recycler list?"
+                    )
+                    break
+                }
+                if (requestIsFocusedItemLats(service)) {
+                    break
+                }
+            } while (true)
+
+            service.createMakerFile()
+
+            Log.i(
+                RECEIVER_TAG,
+                "Screen accessibility analysing completed."
+            )
+        }
     }
 
     private fun AccessibilityNodeInfo?.isAccessible(): Boolean {

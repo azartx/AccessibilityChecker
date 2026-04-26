@@ -8,7 +8,11 @@ data class ComponentInfo(
     val isClickable: Boolean,
 ) {
 
-    fun toByteArray(): ByteArray {
-        return toString().toByteArray()
+    fun asString(): String {
+        return toString()
+            .replaceFirst("ComponentInfo(", "")
+            .toMutableList()
+            .apply { removeAt(this.size - 1) }
+            .joinToString(separator = "")
     }
 }
