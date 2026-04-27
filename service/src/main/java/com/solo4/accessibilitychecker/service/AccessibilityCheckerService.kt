@@ -6,7 +6,6 @@ import android.content.IntentFilter
 import android.os.Environment
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.solo4.accessibilitychecker.service.broadcastreceiver.AccessibilityFocusReceiver
 import com.solo4.accessibilitychecker.service.broadcastreceiver.AttyCheckerBridge
@@ -51,7 +50,7 @@ class AccessibilityCheckerService : AccessibilityService() {
 
     private var receiver: AccessibilityFocusReceiver? = null
 
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.Default)
     private var eventsJob: Job? = null
     private val mutex = Mutex()
 
@@ -67,14 +66,17 @@ class AccessibilityCheckerService : AccessibilityService() {
         collectEvents()
     }
 
-    override fun onInterrupt() {
+    override fun onInterrupt() {}
+
+    override fun onDestroy() {
         eventsJob?.cancel()
         receiver?.let { unregisterReceiver(it) }
         receiver = null
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        scope.launch(Dispatchers.Main) {
+        scope.launch {
             eventsProcessorFlow.emit(event)
         }
     }
@@ -91,7 +93,7 @@ class AccessibilityCheckerService : AccessibilityService() {
                 .map {
                     dumpActiveWindow()
                 }
-                .distinctUntilChanged()
+                .distinctUntilChanged { old, new -> old.hashCode() == new.hashCode() }
                 .collectLatest { dump ->
                     mutex.withLock {
                         val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
@@ -109,13 +111,15 @@ class AccessibilityCheckerService : AccessibilityService() {
 
 
     private fun dumpActiveWindow(): String {
-        val root: AccessibilityNodeInfo? = rootInActiveWindow
+        val root: AccessibilityNodeInfoCompat? = rootInActiveWindow?.let {
+            AccessibilityNodeInfoCompat.wrap(it)
+        }
         if (root == null) {
             Log.w(TAG, "Root node is null")
             return ""
         }
 
-        val jsonRoot = nodeToJson(AccessibilityNodeInfoCompat.wrap(root))
+        val jsonRoot = nodeToJson(root)
         Log.i(TAG, jsonRoot.toString(2))
         root.recycle()
         return jsonRoot.toString(2)

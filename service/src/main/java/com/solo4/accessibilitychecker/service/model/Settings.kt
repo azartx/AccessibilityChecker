@@ -20,7 +20,7 @@ data class Filters(
             if (activityName.isBlank()) {
                 false
             } else {
-                screens.any { it.contains(activityName) }
+                screens.any { it == activityName }
             }
         } else {
             true
