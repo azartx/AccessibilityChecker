@@ -23,4 +23,8 @@ class AccessibilityFocusReceiver : BroadcastReceiver(), AttyCheckerBridge {
     override fun clearFilteringByActivity() {
         // TODO
     }
+
+    override fun getActualSettings() {
+        TODO("Not yet implemented")
+    }
 }

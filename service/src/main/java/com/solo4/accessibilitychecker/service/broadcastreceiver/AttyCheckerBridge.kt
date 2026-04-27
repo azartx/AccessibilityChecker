@@ -24,4 +24,6 @@ interface AttyCheckerBridge {
     fun removeFilteringByActivity(activityName: String)
 
     fun clearFilteringByActivity()
+
+    fun getActualSettings()
 }

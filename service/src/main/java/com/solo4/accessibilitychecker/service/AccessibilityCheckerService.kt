@@ -37,6 +37,7 @@ private const val STORAGE_A11Y_INFO_FILE_PATH = "/storage/emulated/0/Android/dat
 // adb shell settings put secure enabled_accessibility_services "$(adb shell settings get secure enabled_accessibility_services):com.solo4.accessibilitychecker/com.solo4.accessibilitychecker.service.AccessibilityCheckerService"
 
 // TODO: add ability to update settings sync
+// TODO: service working status in notification
 @Transient
 var serviceSettings = Settings()
 
