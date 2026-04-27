@@ -2,6 +2,8 @@ package com.solo4.accessibilitychecker.service.model
 
 import android.view.accessibility.AccessibilityEvent
 import com.solo4.accessibilitychecker.service.utils.activityName
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class Settings(
     val filters: Filters = Filters(),
@@ -31,4 +33,13 @@ data class Filters(
 
         return isValidEvent && isValidScreen
     }
+}
+
+fun Settings.toJson(): String {
+    val json = JSONObject()
+    json.put("filters", JSONObject().apply {
+        put("screens", JSONArray(filters.screens))
+        put("events", JSONArray(filters.events))
+    })
+    return json.toString()
 }

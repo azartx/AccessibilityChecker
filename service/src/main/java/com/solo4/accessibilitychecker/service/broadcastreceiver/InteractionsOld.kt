@@ -134,8 +134,8 @@ private fun findLastFocusableNode(rootNode: AccessibilityNodeInfo): Accessibilit
 }
 
 private fun getScreenA11Y(service: AccessibilityCheckerService) {
-    service.removeMakerFile()
-    service.clearA11yLogFile()
+    //service.removeMakerFile()
+    //service.clearA11yLogFile()
 
     CoroutineScope(Dispatchers.IO).launch {
         var itemsFocusedCount = 0
@@ -156,7 +156,7 @@ private fun getScreenA11Y(service: AccessibilityCheckerService) {
             }
         } while (true)
 
-        service.createMakerFile()
+        //service.createMakerFile()
 
         Log.i(
             RECEIVER_TAG,

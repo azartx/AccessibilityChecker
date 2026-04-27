@@ -29,7 +29,6 @@ import java.io.File
 
 private const val SERVICE_TAG = "AService"
 private const val TAG = SERVICE_TAG
-private const val COMPONENTS_INFO_FILE_NAME = "service_response.txt"
 private const val DUMP_FILE_NAME = "current_screen_dump.json"
 private const val STORAGE_A11Y_INFO_FILE_PATH = "/storage/emulated/0/Android/data/com.solo4.accessibilitychecker/files/Download/$DUMP_FILE_NAME"
 
@@ -37,7 +36,7 @@ private const val STORAGE_A11Y_INFO_FILE_PATH = "/storage/emulated/0/Android/dat
 
 // TODO: add ability to update settings sync
 // TODO: service working status in notification
-@Transient
+@Volatile
 var serviceSettings = Settings()
 
 @SuppressLint("AccessibilityPolicy")
@@ -45,7 +44,8 @@ class AccessibilityCheckerService : AccessibilityService() {
 
     companion object {
         @Volatile
-        lateinit var instance: AccessibilityCheckerService; private set
+        lateinit var instance: AccessibilityCheckerService
+            private set
     }
 
     private var receiver: AccessibilityFocusReceiver? = null
@@ -61,7 +61,7 @@ class AccessibilityCheckerService : AccessibilityService() {
         val filter = IntentFilter().apply {
             AttyCheckerBridge.receiverActions.forEach { addAction(it) }
         }
-        receiver = AccessibilityFocusReceiver()
+        receiver = AccessibilityFocusReceiver(this)
         registerReceiver(receiver, filter, RECEIVER_EXPORTED)
         collectEvents()
     }
@@ -118,9 +118,7 @@ class AccessibilityCheckerService : AccessibilityService() {
             Log.w(TAG, "Root node is null")
             return ""
         }
-
         val jsonRoot = nodeToJson(root)
-        Log.i(TAG, jsonRoot.toString(2))
         root.recycle()
         return jsonRoot.toString(2)
     }
@@ -160,35 +158,5 @@ class AccessibilityCheckerService : AccessibilityService() {
             Log.e(TAG, "Error while building JSON for node", e)
         }
         return obj
-    }
-
-    fun clearA11yLogFile() {
-        val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        if (dir != null && dir.exists()) {
-            val file = File(dir, COMPONENTS_INFO_FILE_NAME)
-            if (file.exists() && file.length() > 0) {
-                file.outputStream().use { it.write(byteArrayOf()) }
-            }
-        }
-    }
-
-    fun createMakerFile() {
-        val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        if (dir != null) {
-            val file = File(dir, "marker.txt")
-            if (!file.exists()) {
-                file.createNewFile()
-            }
-        }
-    }
-
-    fun removeMakerFile() {
-        val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        if (dir != null) {
-            val file = File(dir, "marker.txt")
-            if (file.exists()) {
-                file.delete()
-            }
-        }
     }
 }
