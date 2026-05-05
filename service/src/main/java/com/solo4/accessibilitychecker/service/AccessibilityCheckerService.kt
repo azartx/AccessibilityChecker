@@ -131,11 +131,12 @@ class AccessibilityCheckerService : AccessibilityService() {
             obj.put("contentDesc", node.contentDescription)
             obj.put("text", node.text)
             obj.put("hint", node.hintText)
-            obj.put("clickable", node.isClickable)
-            obj.put("focusable", node.isFocusable)
-            obj.put("accessibilityFocused", node.isAccessibilityFocused)
-            obj.put("enabled", node.isEnabled)
+            obj.put("isClickable", node.isClickable)
+            obj.put("isFocusable", node.isFocusable)
+            obj.put("isAccessibilityFocused", node.isAccessibilityFocused)
+            obj.put("isEnabled", node.isEnabled)
             obj.put("isVisible", node.isVisibleToUser)
+            obj.put("isCheckable", node.isCheckable)
 
             if (node.className.contains("RecyclerView")) {
                 obj.put("hasCollectionInfo", (node.collectionInfo != null).toString())
