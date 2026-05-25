@@ -4,6 +4,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <TextView
+        android:id="@+id/tvServiceInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:text="Включен ли a11y сервис: @" />
+
     <ImageView
         android:id="@+id/imageview"
         android:layout_width="48dp"
@@ -43,5 +50,12 @@
             android:text="Description" />
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/button_send_log"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Отправить последний полученный лог"/>
 
 </LinearLayout>
