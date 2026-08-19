@@ -13,6 +13,7 @@ import com.solo4.accessibilitychecker.service.model.Settings
 import com.solo4.accessibilitychecker.service.utils.LogeEror
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -30,7 +31,6 @@ import java.io.File
 private const val SERVICE_TAG = "AService"
 private const val TAG = SERVICE_TAG
 private const val DUMP_FILE_NAME = "current_screen_dump.json"
-private const val STORAGE_A11Y_INFO_FILE_PATH = "/storage/emulated/0/Android/data/com.solo4.accessibilitychecker/files/Download/$DUMP_FILE_NAME"
 
 // adb shell settings put secure enabled_accessibility_services "$(adb shell settings get secure enabled_accessibility_services):com.solo4.accessibilitychecker/com.solo4.accessibilitychecker.service.AccessibilityCheckerService"
 
@@ -81,6 +81,7 @@ class AccessibilityCheckerService : AccessibilityService() {
         }
     }
 
+    @OptIn(FlowPreview::class)
     private fun collectEvents() {
         if (eventsJob?.isActive == true) {
             LogeEror("Events job is active.")
@@ -108,7 +109,6 @@ class AccessibilityCheckerService : AccessibilityService() {
                 }
         }
     }
-
 
     private fun dumpActiveWindow(): String {
         val root: AccessibilityNodeInfoCompat? = rootInActiveWindow?.let {
