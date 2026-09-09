@@ -20,6 +20,7 @@ fun AccessibilityNodeInfoCompat.toJsonObject(): JSONObject {
         jsonObject.put("isAccessibilityFocused", node.isAccessibilityFocused)
         jsonObject.put("isEnabled", node.isEnabled)
         jsonObject.put("isVisibleToUser", node.isVisibleToUser)
+        jsonObject.put("isHeader", node.isHeading)
         jsonObject.put("isCheckable", node.isCheckable)
         jsonObject.put("isChecked", node.isChecked)
         jsonObject.put("isImportantForAccessibility", node.isImportantForAccessibility)

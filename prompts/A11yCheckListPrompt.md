@@ -8,24 +8,25 @@
 
 ## 2. Словарь полей дампа
 
-| Поле                          | Значение                                                                 |
-|-------------------------------|--------------------------------------------------------------------------|
-| `viewId`                      | Идентификатор view (resource name) или `null`                            |
-| `class`                       | Класс view, например `android.widget.Button`                             |
-| `text`                        | Отображаемый текст ноды                                                  |
-| `contentDesc`                 | Контент-описание (contentDescription) ноды для accessibility              |
-| `hint`                        | Подсказка (android:hint)                                                  |
-| `isClickable`                 | Нода кликабельна                                                         |
-| `isFocusable`                 | Нода может получать фокус                                                |
-| `isAccessibilityFocused`      | Нода в данный момент в фокусе доступности                                |
-| `isEnabled`                   | Нода доступна для взаимодействия                                         |
-| `isVisibleToUser`             | Нода видима пользователю                                                  |
-| `isCheckable`                 | Нода является переключателем (checkable)                                 |
-| `isChecked`                   | Текущее состояние переключателя (checked)                                |
-| `isImportantForAccessibility` | Нода участвует в дереве доступности                                     |
-| `isScrollable`                | Нода может прокручиваться (ScrollView, список)                           |
-| `isEditable`                  | Нода поддерживает ввод текста                                            |
-| `hasCollectionInfo`           | Есть у списков (RecyclerView); признак корректной нумерации элементов    |
+| Поле                          | Значение                                                              |
+|-------------------------------|-----------------------------------------------------------------------|
+| `viewId`                      | Идентификатор view (resource name) или `null`                         |
+| `class`                       | Класс view, например `android.widget.Button`                          |
+| `text`                        | Отображаемый текст ноды                                               |
+| `contentDesc`                 | Контент-описание (contentDescription) ноды для accessibility          |
+| `hint`                        | Подсказка (android:hint)                                              |
+| `isClickable`                 | Нода кликабельна                                                      |
+| `isFocusable`                 | Нода может получать фокус                                             |
+| `isAccessibilityFocused`      | Нода в данный момент в фокусе доступности                             |
+| `isEnabled`                   | Нода доступна для взаимодействия                                      |
+| `isVisibleToUser`             | Нода видима пользователю                                              |
+| `isHeader`                    | Нода является заголовком на экране                                    |
+| `isCheckable`                 | Нода является переключателем (checkable)                              |
+| `isChecked`                   | Текущее состояние переключателя (checked)                             |
+| `isImportantForAccessibility` | Нода участвует в дереве доступности                                   |
+| `isScrollable`                | Нода может прокручиваться (ScrollView, список)                        |
+| `isEditable`                  | Нода поддерживает ввод текста                                         |
+| `hasCollectionInfo`           | Есть у списков (RecyclerView); признак корректной нумерации элементов |
 
 Поле в дампе называется именно `class` (не `className`). Значения булевых полей — `true`/`false`.
 
