@@ -1,8 +1,10 @@
 package com.solo4.accessibilitychecker.service.mapper
 
+import android.graphics.Rect
 import android.util.Log
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.solo4.accessibilitychecker.service.TAG
+import com.solo4.accessibilitychecker.service.utils.isLikelyHeader
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -10,6 +12,8 @@ fun AccessibilityNodeInfoCompat.toJsonObject(): JSONObject {
     val node = this
     val jsonObject = JSONObject()
     try {
+        val boundsRect = Rect()
+        node.getBoundsInScreen(boundsRect)
         jsonObject.put("viewId", node.viewIdResourceName)
         jsonObject.put("class", node.className)
         jsonObject.put("contentDesc", node.contentDescription)
@@ -21,6 +25,13 @@ fun AccessibilityNodeInfoCompat.toJsonObject(): JSONObject {
         jsonObject.put("isEnabled", node.isEnabled)
         jsonObject.put("isVisibleToUser", node.isVisibleToUser)
         jsonObject.put("isHeader", node.isHeading)
+        jsonObject.put("isLikelyHeader", node.isLikelyHeader(boundsRect))
+        jsonObject.put("bounds", JSONObject().apply {
+            put("left", boundsRect.left)
+            put("top", boundsRect.top)
+            put("right", boundsRect.right)
+            put("bottom", boundsRect.bottom)
+        })
         jsonObject.put("isCheckable", node.isCheckable)
         jsonObject.put("isChecked", node.isChecked)
         jsonObject.put("isImportantForAccessibility", node.isImportantForAccessibility)

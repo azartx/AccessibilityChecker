@@ -20,7 +20,9 @@
 | `isAccessibilityFocused`      | Нода в данный момент в фокусе доступности                             |
 | `isEnabled`                   | Нода доступна для взаимодействия                                      |
 | `isVisibleToUser`             | Нода видима пользователю                                              |
-| `isHeader`                    | Нода является заголовком на экране                                    |
+| `isHeader`                    | Системный флаг заголовка (accessibilityHeading)                       |
+| `isLikelyHeader`              | Признак «нода, вероятно, является заголовком» (вычисляется по эвристике) |
+| `bounds`                      | Координаты ноды на экране: `left`, `top`, `right`, `bottom`           |
 | `isCheckable`                 | Нода является переключателем (checkable)                              |
 | `isChecked`                   | Текущее состояние переключателя (checked)                             |
 | `isImportantForAccessibility` | Нода участвует в дереве доступности                                   |
@@ -33,7 +35,7 @@
 ## 3. Обход дампа
 
 1. Начни с корневой ноды. Рекурсивно обойди **каждую** ноду через массив `children`.
-2. Для каждой ноды проверь **все** признаки чек-листа по порядку (№1–№12).
+2. Для каждой ноды проверь **все** признаки чек-листа по порядку (№1–№13).
 3. Если ноды нет признаку чек-листа нет — пропусти её.
 
 ## 4. Правила агрегации замечаний
@@ -43,7 +45,7 @@
 
 ## 5. Формат цитаты проблемного JSON-отрывка
 
-- В графе «проблемный json отрывок» указывай **только целевую ноду**: её релевантные поля (viewId, class, text, contentDesc, hint, isClickable, isCheckable, isImportantForAccessibility — те, что подтверждают дефект).
+- В графе «проблемный json отрывок» указывай **только целевую ноду**: её релевантные поля (viewId, class, text, contentDesc, hint, isClickable, isCheckable, isHeader, isLikelyHeader, isImportantForAccessibility — те, что подтверждают дефект).
 - Не включай в цитату массив `children`.
 - Ограничь длину отрывка ~200 символов. Если нода большая — приведи ключевые поля.
 
@@ -88,3 +90,4 @@
 | 10 | `class`: `android.widget.ScrollView`                                                                        | Прокручиваемый компонент отсутствует в дампе доступности                                                      | Установить importantForAccessibility=no для ScrollView либо установить contentDescription, если важен фокус на ScrollView                          | medium    |
 | 11 | `isChecked`: true или false                                                                                 | У переключателя отображается его состояние (isChecked), понятное пользователю                                 | Отображать состояние переключателя через text/contentDesc и трейт Switcher                                                                        | medium    |
 | 12 | `isImportantForAccessibility`: false у информативной ноды (кнопка с текстом, TextView с текстом)            | Информативный элемент должен быть виден в дереве доступности                                                  | Убрать importantForAccessibility=no с информативных элементов, оставить только у декоративных                                                 | medium    |
+| 13 | `isLikelyHeader`: true, а `isHeader`: false                                                                 | Нода-заголовок должна быть помечена `isHeader`: true                                                        | Установить ноде свойство заголовка (android:accessibilityHeading). Если `isLikelyHeader=false` и `isHeader=true` — дефекта нет                                                | medium    |
