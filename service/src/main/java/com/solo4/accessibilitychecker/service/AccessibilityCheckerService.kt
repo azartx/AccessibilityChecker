@@ -9,8 +9,10 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.solo4.accessibilitychecker.service.broadcastreceiver.AccessibilityFocusReceiver
 import com.solo4.accessibilitychecker.service.broadcastreceiver.AttyCheckerBridge
+import com.solo4.accessibilitychecker.service.mapper.toJsonObject
 import com.solo4.accessibilitychecker.service.model.Settings
 import com.solo4.accessibilitychecker.service.utils.LogeEror
+import com.solo4.accessibilitychecker.service.utils.getAppDownloadsDir
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -24,13 +26,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.File
 
 private const val SERVICE_TAG = "AService"
-private const val TAG = SERVICE_TAG
-private const val DUMP_FILE_NAME = "current_screen_dump.json"
+internal const val TAG = SERVICE_TAG
+internal const val DUMP_FILE_NAME = "current_screen_dump.json"
 
 // adb shell settings put secure enabled_accessibility_services "$(adb shell settings get secure enabled_accessibility_services):com.solo4.accessibilitychecker/com.solo4.accessibilitychecker.service.AccessibilityCheckerService"
 
@@ -91,77 +90,24 @@ class AccessibilityCheckerService : AccessibilityService() {
             eventsProcessorFlow
                 .filter { serviceSettings.filters.canProceedEvent(it) }
                 .debounce(200)
-                .map {
-                    dumpActiveWindow()
-                }
+                .map { getJsonAccessibilityDump() }
                 .distinctUntilChanged { old, new -> old.hashCode() == new.hashCode() }
                 .collectLatest { dump ->
                     mutex.withLock {
-                        val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                        if (dir != null) {
-                            val file = File(dir, DUMP_FILE_NAME)
-                            if (!file.exists()) {
-                                file.createNewFile()
-                            }
-                            file.writeText(dump)
-                        }
+                        getAppDownloadsDir()?.writeText(dump)
                     }
                 }
         }
     }
 
-    private fun dumpActiveWindow(): String {
-        val root: AccessibilityNodeInfoCompat? = rootInActiveWindow?.let {
-            AccessibilityNodeInfoCompat.wrap(it)
-        }
-        if (root == null) {
-            Log.w(TAG, "Root node is null")
-            return ""
-        }
-        val jsonRoot = nodeToJson(root)
-        root.recycle()
-        return jsonRoot.toString(2)
-    }
-
-    private fun nodeToJson(node: AccessibilityNodeInfoCompat): JSONObject {
-        val obj = JSONObject()
-        try {
-            obj.put("viewId", node.viewIdResourceName)
-            obj.put("class", node.className)
-            obj.put("contentDesc", node.contentDescription)
-            obj.put("text", node.text)
-            obj.put("hint", node.hintText)
-            obj.put("isClickable", node.isClickable)
-            obj.put("isFocusable", node.isFocusable)
-            obj.put("isAccessibilityFocused", node.isAccessibilityFocused)
-            obj.put("isEnabled", node.isEnabled)
-            obj.put("isVisible", node.isVisibleToUser)
-            obj.put("isCheckable", node.isCheckable)
-            obj.put("isChecked", node.isChecked)
-            obj.put("isImportantForAccessibility", node.isImportantForAccessibility)
-            obj.put("isScrollable", node.isScrollable)
-            obj.put("isEditable", node.isEditable)
-
-            if (node.className.contains("RecyclerView")) {
-                obj.put("hasCollectionInfo", (node.collectionInfo != null).toString())
+    private fun getJsonAccessibilityDump(): String {
+        return rootInActiveWindow
+            ?.let(AccessibilityNodeInfoCompat::wrap)
+            ?.toJsonObject()
+            ?.toString(2)
+            ?: run {
+                Log.w(TAG, "Root node is null")
+                ""
             }
-
-            // ----- Children -------------------------------------------------
-            val childCount = node.childCount
-            if (childCount > 0) {
-                val childrenArray = JSONArray()
-                for (i in 0 until childCount) {
-                    val child = node.getChild(i) ?: continue
-                    childrenArray.put(nodeToJson(child))
-                    child.recycle()
-                }
-                obj.put("children", childrenArray)
-            } else {
-                obj.put("children", JSONArray())
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error while building JSON for node", e)
-        }
-        return obj
     }
 }

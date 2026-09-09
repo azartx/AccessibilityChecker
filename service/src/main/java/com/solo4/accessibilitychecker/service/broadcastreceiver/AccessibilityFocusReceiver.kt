@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.solo4.accessibilitychecker.service.AccessibilityCheckerService
+import com.solo4.accessibilitychecker.service.model.Settings
 import com.solo4.accessibilitychecker.service.model.toJson
 import com.solo4.accessibilitychecker.service.serviceSettings
 
@@ -26,6 +27,11 @@ class AccessibilityFocusReceiver(
             ACTION_CLEAR_ACTIVITY_FILTERING -> {
                 clearFilteringByActivity()
                 postResult("Active activities filter: ${serviceSettings.filters.screens}")
+            }
+
+            ACTION_FILTERS_SET_DEFAULT -> {
+                setDefaultFilters()
+                postResult("Actual filters: ${getActualSettings()}")
             }
 
             ACTION_SHOW_SETTINGS -> {
@@ -61,6 +67,10 @@ class AccessibilityFocusReceiver(
         serviceSettings = serviceSettings.copy(
             filters = serviceSettings.filters.copy(screens = emptyList())
         )
+    }
+
+    override fun setDefaultFilters() {
+        serviceSettings = Settings()
     }
 
     override fun getActualSettings(): String {
